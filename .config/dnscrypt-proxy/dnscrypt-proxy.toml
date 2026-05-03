@@ -145,12 +145,12 @@ http3_probe = true
 ## Note: the random username and password used by dnscrypt-proxy should not
 ## actually be defined in Tor's configuration.
 
-## [MODE: ULTRA-PRIVACY (TOR)]                                                                                │ │
-## To enable Tor routing:                                                                                     │ │
-## 1. Set force_tcp = true                                                                                    │ │
-## 2. Uncomment the 'proxy' line below.                                                                       │ │
-## 3. Set 'doh_servers = false' and 'dnscrypt_servers = true' for best performance.                           │ │
-# force_tcp = true                                                                                            │ │
+## [MODE: ULTRA-PRIVACY (TOR)]                                                                                
+## To enable Tor routing:                                                                                     
+## 1. Set force_tcp = true                                                                                    
+## 2. Uncomment the 'proxy' line below.                                                                       
+## 3. Set 'doh_servers = false' and 'dnscrypt_servers = true' for best performance.                           
+# force_tcp = true                                                                                            
 # proxy = 'socks5://dnscrypt:$(openssl rand -hex 8)@127.0.0.1:9050'
 
 ## HTTP/HTTPS proxy (Only for DoH servers)
