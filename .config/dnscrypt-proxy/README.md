@@ -1,4 +1,4 @@
-# Elite Stealth DNS Infrastructure (v2026.05)
+# Stealth DNS Infrastructure (v2026.05)
 
 A PhD-level, professional DNS stack designed for maximum performance and absolute privacy in hostile network environments. This project automates the deployment of a hardened `dnscrypt-proxy` configuration, integrating state-of-the-art circumvention protocols and automated maintenance cycles.
 
@@ -32,9 +32,7 @@ The project follows a decoupled, **Git-ready architecture** separating static co
 │   ├── health-check.sh               # PhD-level system diagnostic suite
 │   └── update-maintenance.sh         # Autonomous blocklist aggregator
 ├── docs/                        # [GIT] Technical Specifications
-│   ├── ELITE_DNS_SPECIFICATION.md    # Scientific grounding and research
-│   ├── PROMPT.md                     # Research context and AI guidelines
-│   └── RESEARCH_AND_AUDIT.md          # Architectural audit and tool analysis
+│   └── audit.md                 # Architectural audit and tool analysis
 ├── system/                      # [GIT] OS Integration
 │   └── com.x0r.dnscrypt.maintenance.plist  # macOS LaunchDaemon (Scheduler)
 ├── backups/                     # Recovery data

@@ -29,20 +29,14 @@
 #                             Global settings                                  #
 ###############################################################################
 
-## List of servers to use
-##
-## Servers from the "public-resolvers" source (see down below) can
-## be viewed here: https://dnscrypt.info/public-servers
-##
-## The proxy will automatically pick working servers from this list.
-## Note that the require_* filters do NOT apply when using this setting.
-##
-## By default, this list is empty and all registered servers matching the
-## require_* filters will be used instead.
-##
 ## Remove the leading # first to enable this; lines starting with # are ignored.
-# server_names = ['odoh-cloudflare']
-server_names = ['mullvad-doh', 'quad9-dnscrypt-ip4-nofilter-ecs-pri', 'cloudflare']
+
+## Profile: Strict Anonymous DNSCrypt
+# server_names = ['cloudflare', 'mullvad-doh', 'quad9-dnscrypt-ip4-nofilter-ecs-pri']
+server_names = ['cloudflare', 'quad9-dnscrypt-ip4-filter-pri']
+
+## Profile: ODoH Privacy
+# server_names = ['odoh-snowstorm', 'odoh-cloudflare', 'odoh-crypto-sx']
 
 ## List of local addresses and ports to listen to. Can be IPv4 and/or IPv6.
 ## Example with both IPv4 and IPv6:
@@ -136,7 +130,6 @@ http3 = true
 
 http3_probe = true
 
-
 ## SOCKS proxy
 ## Uncomment the following line to route all TCP connections to a local Tor node
 ## Tor doesn't support UDP, so set `force_tcp` to `true` as well. When passing
@@ -145,17 +138,16 @@ http3_probe = true
 ## Note: the random username and password used by dnscrypt-proxy should not
 ## actually be defined in Tor's configuration.
 
-## [MODE: ULTRA-PRIVACY (TOR)]                                                                                
-## To enable Tor routing:                                                                                     
-## 1. Set force_tcp = true                                                                                    
-## 2. Uncomment the 'proxy' line below.                                                                       
-## 3. Set 'doh_servers = false' and 'dnscrypt_servers = true' for best performance.                           
-# force_tcp = true                                                                                            
+## [MODE: ULTRA-PRIVACY (TOR)]
+## To enable Tor routing:
+## 1. Set force_tcp = true
+## 2. Uncomment the 'proxy' line below.
+## 3. Set 'doh_servers = false' and 'dnscrypt_servers = true' for best performance.
+# force_tcp = true
 # proxy = 'socks5://dnscrypt:$(openssl rand -hex 8)@127.0.0.1:9050'
 
 ## HTTP/HTTPS proxy (Only for DoH servers)
 # http_proxy = 'http://127.0.0.1:8888'
-
 
 ## How long a DNS query will wait for a response, in milliseconds.
 ## If you have a network with *a lot* of latency, you may need to
@@ -164,7 +156,6 @@ http3_probe = true
 ## A timeout below 5000 is not recommended.
 
 timeout = 7000
-
 
 ## Keepalive for HTTP (HTTPS, HTTP/2, HTTP/3) queries, in seconds
 
@@ -178,14 +169,12 @@ keepalive = 30
 
 edns_client_subnet = ['0.0.0.0/0']
 
-
 ## Response for blocked queries. Options are `refused`, `hinfo` (default) or
 ## an IP response. To give an IP response, use the format `a:<IPv4>,aaaa:<IPv6>`.
 ## Using the `hinfo` option means that some responses will be lies.
 ## Unfortunately, the `hinfo` option appears to be required for Android 8+
 
 blocked_query_response = 'refused'
-
 
 ###############################################################################
 #                        Load Balancing & Performance                          #
@@ -237,26 +226,26 @@ enable_hot_reload = false
 ## Log file for the application, as an alternative to sending logs to
 ## the standard system logging service (syslog/Windows event log).
 
-log_file = '/opt/homebrew/var/log/dnscrypt-proxy/dnscrypt-proxy.log'
+# log_file = '/opt/homebrew/var/log/dnscrypt-proxy/dnscrypt-proxy.log'
 
 ## Log level (0-6, default: 2 - 0 is very verbose, 6 only contains fatal errors)
 
-log_level = 2
+# log_level = 2
 
 ## When using a log file, only keep logs from the most recent launch.
 
-log_file_latest = true
+# log_file_latest = true
 
 ## Automatic log files rotation
 
 # How long to keep backup files, in days
-log_files_max_age = 7
+# log_files_max_age = 7
 
 # Maximum log files size in MB - Set to 0 for unlimited.
-log_files_max_size = 20
+# log_files_max_size = 20
 
 # Maximum log files backups to keep (or 0 to keep all backups)
-log_files_max_backups = 1
+# log_files_max_backups = 1
 
 ## Use the system logger (syslog on Unix, Event Log on Windows)
 
@@ -355,8 +344,7 @@ tls_disable_session_tickets = false
 ## not be sent there. If you're using DNSCrypt or Anonymized DNS and your
 ## lists are up to date, these resolvers will not even be used.
 
-bootstrap_resolvers = ['9.9.9.9:53', '149.112.112.112:53']
-
+bootstrap_resolvers = ['9.9.9.9:53', '1.1.1.1:53']
 
 ## When internal DNS resolution is required, for example to retrieve
 ## the resolvers list:
@@ -371,7 +359,6 @@ bootstrap_resolvers = ['9.9.9.9:53', '149.112.112.112:53']
 ## `listen_addresses` must not be empty.
 
 ignore_system_dns = true
-
 
 ## Maximum time (in seconds) to wait for network connectivity before
 ## initializing the proxy.
@@ -771,61 +758,137 @@ blocked_ips_file = 'rules/blocked-ips.txt'
 
 [sources]
 
-[sources.public-resolvers]
-    urls = [
-      'https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/public-resolvers.md',
-      'https://download.dnscrypt.info/resolvers-list/v3/public-resolvers.md',
-    ]
-    cache_file = '/opt/homebrew/var/cache/dnscrypt-proxy/public-resolvers.md'
-    minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
-    refresh_delay = 72
-    prefix = 'public-resolvers'
+########################################
+# DNSCRYPT-PROXY SOURCE CONFIGURATION
+#
+# This section defines remote resolver lists.
+# Lists are signed and periodically refreshed.
+#
+# DESIGN PRINCIPLES:
+# - Use only necessary sources
+# - Avoid redundancy unless required
+# - Separate ODoH, DNSCrypt, and relays clearly
+########################################
 
-[sources.'opennic']
-    urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/opennic.md', 'https://download.dnscrypt.info/resolvers-list/v3/opennic.md']
-    minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
-    cache_file = '/opt/homebrew/var/cache/dnscrypt-proxy/opennic.md'
 
-## Anonymized DNS relays
+########################################
+# PRIMARY PUBLIC RESOLVERS (DNSCrypt + DoH)
+########################################
+# General-purpose resolvers list.
+# Includes a mix of providers (Cloudflare, Quad9, etc.)
+#
+# USE CASE:
+# - Fallback DNS
+# - Non-ODoH setups
+# - Testing / benchmarking
 
-[sources.relays]
-    urls = [
-      'https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/relays.md',
-      'https://download.dnscrypt.info/resolvers-list/v3/relays.md',
-    ]
-    cache_file = '/opt/homebrew/var/cache/dnscrypt-proxy/relays.md'
-    minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
-    refresh_delay = 24
-    prefix = ''
+# [sources.public-resolvers]
+#     urls = [
+#       'https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/public-resolvers.md',
+#       'https://download.dnscrypt.info/resolvers-list/v3/public-resolvers.md',
+#     ]
+#     cache_file = '/opt/homebrew/var/cache/dnscrypt-proxy/public-resolvers.md'
+#     minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+#     refresh_delay = 72
+#     prefix = 'public-'
+#
+########################################
+# OPENNIC (ALTERNATIVE ROOT DNS)
+########################################
+# Community-driven DNS network.
+# Not ICANN-standard → may resolve additional domains.
+#
+# WARNING:
+# - Not suitable for strict compatibility environments
+# - Can break some services
 
-[sources.'onion-services']
-    urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/onion-services.md', 'https://download.dnscrypt.info/resolvers-list/v3/onion-services.md', 'https://ipv6.download.dnscrypt.info/resolvers-list/v3/onion-services.md']
-    minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
-    cache_file = '/opt/homebrew/var/cache/dnscrypt-proxy/onion-services.md'
+# [sources.'opennic']
+#     urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/opennic.md', 'https://download.dnscrypt.info/resolvers-list/v3/opennic.md']
+#     minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+#     cache_file = '/opt/homebrew/var/cache/dnscrypt-proxy/opennic.md'
+# 	 refresh_delay = 72
+#     prefix = 'opennic-'
 
-### ODoH (Oblivious DoH) servers and relays
+########################################
+# DNSCRYPT RELAYS (Anonymized DNS)
+########################################
+# Used for DNSCrypt anonymization (NOT ODoH).
+#
+# IMPORTANT:
+# - Only works with DNSCrypt servers
+# - Do NOT mix with ODoH
 
-[sources.odoh-servers]
-  urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/odoh-servers.md', 'https://download.dnscrypt.info/resolvers-list/v3/odoh-servers.md']
-  cache_file = '/opt/homebrew/var/cache/dnscrypt-proxy/odoh-servers.md'
-  minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
-  refresh_delay = 24
-  prefix = ''
+[sources.'relays']
+   urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/relays.md', 'https://download.dnscrypt.info/resolvers-list/v3/relays.md', 'https://cdn.jsdelivr.net/gh/DNSCrypt/dnscrypt-resolvers@master/v3/relays.md']
+	minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+	cache_file = '/opt/homebrew/var/cache/dnscrypt-proxy/relays.md'
+   refresh_delay = 24
+   prefix = ''
 
-[sources.odoh-relays]
-  urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/odoh-relays.md', 'https://download.dnscrypt.info/resolvers-list/v3/odoh-relays.md']
-  cache_file = '/opt/homebrew/var/cache/dnscrypt-proxy/odoh-relays.md'
-  minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
-  refresh_delay = 24
-  prefix = ''
+########################################
+# ODoH SERVERS (Oblivious DoH Targets)
+########################################
+# These are DNS resolvers used with ODoH.
+#
+# REQUIREMENTS:
+# - Must be paired with ODoH relays
+# - Cannot be used as plain DoH
 
-### Quad9
+[sources.'odoh-servers']
+	urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/odoh-servers.md', 'https://download.dnscrypt.info/resolvers-list/v3/odoh-servers.md', 'https://cdn.jsdelivr.net/gh/DNSCrypt/dnscrypt-resolvers@master/v3/odoh-servers.md']
+	minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+	cache_file = '/opt/homebrew/var/cache/dnscrypt-proxy/odoh-servers.md'
+	refresh_delay = 24
+	prefix = 'odoh-'
 
-# [sources.quad9-resolvers]
-#   urls = ['https://quad9.net/dnscrypt/quad9-resolvers.md']
-#   minisign_key = 'RWQBphd2+f6eiAqBsvDZEBXBGHQBJfeG6G+wJPPKxCZMoEQYpmoysKUN'
-#   cache_file = '/opt/homebrew/var/cache/dnscrypt-proxy/quad9-resolvers.md'
-#   prefix = 'quad9-'
+########################################
+# ODoH RELAYS (Oblivious Proxies)
+########################################
+# Required for ODoH operation.
+#
+# PRIVACY MODEL:
+# - Relay sees IP
+# - Target sees DNS query
+
+[sources.'odoh-relays']
+urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/odoh-relays.md', 'https://download.dnscrypt.info/resolvers-list/v3/odoh-relays.md', 'https://cdn.jsdelivr.net/gh/DNSCrypt/dnscrypt-resolvers@master/v3/odoh-relays.md']
+	minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+	cache_file = '/opt/homebrew/var/cache/dnscrypt-proxy/odoh-relays.md'
+	refresh_delay = 24
+	prefix = ''
+
+########################################
+# TOR / ONION SERVICES (OPTIONAL)
+########################################
+# Only useful if you route DNS over Tor.
+#
+# WARNING:
+# - High latency
+# - Specialized use only
+
+# [sources.'onion-services']
+#    urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/onion-services.md', 'https://download.dnscrypt.info/resolvers-list/v3/onion-services.md', 'https://ipv6.download.dnscrypt.info/resolvers-list/v3/onion-services.md']
+#    minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+#    cache_file = '/opt/homebrew/var/cache/dnscrypt-proxy/onion-services.md'
+# 	refresh_delay = 24
+# 	prefix = ''
+
+########################################
+# QUAD9 (CURATED SECURITY RESOLVERS)
+########################################
+# High-trust, security-filtering DNS provider.
+#
+# USE CASE:
+# - Malware blocking
+# - Enterprise-grade DNS hygiene
+
+[sources.quad9-resolvers]
+  	urls = ['https://quad9.net/dnscrypt/quad9-resolvers.md']
+  	minisign_key = 'RWQBphd2+f6eiAqBsvDZEBXBGHQBJfeG6G+wJPPKxCZMoEQYpmoysKUN'
+  	cache_file = '/opt/homebrew/var/cache/dnscrypt-proxy/quad9-resolvers.md'
+  	refresh_delay = 24
+  	prefix = 'quad9-'
+
 
 ### Another example source, with resolvers censoring some websites not appropriate for children
 ### This is a subset of the `public-resolvers` list, so enabling both is useless.
@@ -834,16 +897,6 @@ blocked_ips_file = 'rules/blocked-ips.txt'
 #   urls = ['https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/parental-control.md', 'https://download.dnscrypt.info/resolvers-list/v3/parental-control.md']
 #   cache_file = 'parental-control.md'
 #   minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
-
-### dnscry.pt servers - See https://www.dnscry.pt
-
- # [sources.dnscry-pt-resolvers]
- #   urls = ["https://www.dnscry.pt/resolvers.md"]
- #   minisign_key = "RWQM31Nwkqh01x88SvrBL8djp1NH56Rb4mKLHz16K7qsXgEomnDv6ziQ"
- #   cache_file = "dnscry.pt-resolvers.md"
- #   refresh_delay = 73
- #   prefix = "dnscry.pt-"
-
 
 ###############################################################################
 #                        Servers with known bugs                               #
@@ -929,13 +982,12 @@ fragments_blocked = [
 ## select (relay,server) pairs that work well and fit your own criteria (close by or
 ## in different countries, operated by different entities, on distinct ISPs...)
 
-routes = [
-     { server_name='*', via=['*'] }
-]
-
-# routes = [
-#     { server_name='odoh-cloudflare', via=['*'] }
-# ]
+## Profile: ODoH Privacy
+#routes = [
+  	#{ server_name='odoh-cloudflare', via=['odohrelay-crypto-sx', 'odohrelay-numa'] },
+  	#{ server_name='odoh-crypto-sx', via=['odohrelay-crypto-sx', 'odohrelay-numa'] },
+#  { server_name='odoh-snowstorm', via=['odohrelay-crypto-sx'] }
+#]
 
 ## Skip resolvers incompatible with anonymization instead of using them directly
 
@@ -1039,7 +1091,7 @@ tls_key = ""
 
 ## Enable query logging in the monitoring UI
 ## This will show recent queries in the UI
-enable_query_log = true
+enable_query_log = false
 
 ## Privacy level for the monitoring UI
 ## 0: show all details including client IPs
@@ -1104,6 +1156,113 @@ privacy_level = 1
 # [static.'onion-cloudflare']
 #   stamp = 'sdns://AgcAAAAAAAAAAAA-ZG5zNHRvcnBubGZzMmlmdXoyczJ5ZjNmYzdyZG1zYmhtNnJ3NzVldWozNXBhYzZhcDI1emdxYWQub25pb24KL2Rucy1xdWVyeQ'
 
+########################################
+# ODoH TARGET SERVERS (Resolvers)
+########################################
+# These servers resolve DNS queries.
+#
+# Privacy model:
+# - They DO NOT see your IP address (relay hides it)
+# - They ONLY see the DNS query itself
+#
+# IMPORTANT:
+# Targets must support ODoH (not regular DoH)
+
+# Cloudflare ODoH target
+# Fast, highly available, global anycast
+[static.'odoh-cloudflare']
+	stamp = 'sdns://BQcAAAAAAAAAF29kb2guY2xvdWRmbGFyZS1kbnMuY29tCi9kbnMtcXVlcnk'
+
+# crypto.sx ODoH target
+# Privacy-oriented, no logs, anycast
+[static.'odoh-crypto-sx']
+	stamp = 'sdns://BQcAAAAAAAAADm9kb2guY3J5cHRvLnN4Ci9kbnMtcXVlcnk'
+
+# Snowstorm ODoH target
+# No logs, no filtering, DNSSEC support
+[static.'odoh-snowstorm']
+	stamp = 'sdns://BQcAAAAAAAAAE2RvcGUuc25vd3N0b3JtLmxvdmUKL2Rucy1xdWVyeQ'
+
+# tiarap.org ODoH target
+# Blocks ads, trackers, malware
+[static.'odoh-tiarap']
+	stamp = 'sdns://BQMAAAAAAAAADmRvaC50aWFyYXAub3JnBS9vZG9o'
+
+########################################
+# ODoH RELAYS (Proxies)
+########################################
+# These servers forward encrypted DNS queries.
+#
+# Privacy model:
+# - Relays SEE your IP address
+# - Relays DO NOT see DNS content
+#
+# RULE:
+# Only use ODoH relays with ODoH targets
+
+# crypto.sx relay (Fastly Compute network)
+# Good global performance and reliability
+[static.'odohrelay-crypto-sx']
+	stamp = 'sdns://hQcAAAAAAAAAAAAab2RvaC1yZWxheS5lZGdlY29tcHV0ZS5hcHABLw'
+
+# Numa relay (Hetzner, Germany)
+# Good privacy reputation, EU-based
+[static.'odohrelay-numa']
+	stamp = 'sdns://hQcAAAAAAAAAAAASb2RvaC1yZWxheS5udW1hLnJzBi9yZWxheQ'
 
 
+########################################
+# REQUIRED ROUTING CONFIGURATION
+########################################
+# ODoH WILL NOT WORK without routes
+#
+# Each target must be mapped to at least one relay
 
+# Example:
+
+# server_names = ['odoh-cloudflare', 'odoh-crypto-sx']
+
+# routes = [
+#   # Use crypto.sx relay for Cloudflare
+#   { server_name='odoh-cloudflare', via=['odohrelay-crypto-sx'] },
+#
+#   # Use a different relay for crypto.sx (recommended for privacy)
+#   { server_name='odoh-crypto-sx', via=['odohrelay-numa'] }
+# ]
+
+
+########################################
+# OPTIONAL: AUTOMATIC RELAY LIST
+########################################
+# Instead of static relays, you can enable
+# dynamic relay updates from official sources:
+
+# [sources.'odoh-relays']
+# urls = [
+#   'https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/odoh-relays.md',
+#   'https://download.dnscrypt.info/resolvers-list/v3/odoh-relays.md',
+#   'https://cdn.jsdelivr.net/gh/DNSCrypt/dnscrypt-resolvers@master/v3/odoh-relays.md'
+# ]
+# minisign_key = 'RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3'
+# cache_file = 'odoh-relays.md'
+
+
+########################################
+# BEST PRACTICES
+########################################
+
+# ✔ Always use different providers:
+#   target ≠ relay
+#
+# ✔ Example good combinations:
+#   - Cloudflare target + crypto.sx relay
+#   - crypto.sx target + Numa relay
+#
+# ✖ Avoid:
+#   - Same provider for both (reduces privacy)
+#
+# ✔ Use 1–2 relays max for performance
+#
+# ✔ If latency is high:
+#   - remove EU relay (numa) if you're in the US
+#   - prefer Fastly-based relay (crypto.sx)
