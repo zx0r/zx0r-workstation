@@ -15,10 +15,10 @@ END {
   else
     color="#[fg=#00ff00,bg=default]"
 
-  printf "%s %d%%\n", color, pct
+  printf "%s󰍛 %d%%\n", color, pct
 }'
 
-# Gentoo Linux
+# Gentoo Linux 
 # COLOR_CPU_LOW="#[fg=#00ff00, bg=default]"
 # COLOR_CPU_MODERATE="#[fg=#ffff00, bg=default]"
 # COLOR_CPU_HIGH="#[fg=#ff0000, bg=default]"
