@@ -21,7 +21,6 @@ Here's an ideal structure for organizing your Tmux configuration:
 │   ├── hooks.conf
 │   ├── plugins.conf
 │   ├── theme.conf
-│   └── theme.conf.BAK
 ├── README.md
 ├── scripts
 │   ├── ai
