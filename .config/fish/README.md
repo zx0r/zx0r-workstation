@@ -1,14 +1,5 @@
 ## Zero-Fork Architecture for the Fish Shell on Apple Silicon macOS
 
-**Author:** zx0r  
-**Classification:** Workstation-as-Code (WaC) Reference Architecture  
-**SLA Target:** < 25ms Cold Startup Latency (Achieved: **23.7ms**)
-
----
-
-## 🔬 Scientific Manifesto: Proof of Agentic Work (PoAW) in Systems Design
-### Synergistic Synthesis of Principal Architect and Agentic AI within the Workstation-as-Code (WaC) Paradigm
-
 ### 1. Historical Context: The Pre-existing Workstation-as-Code (WaC) Paradigm
 
 In DevOps and systems administration, the concept of **Workstation-as-Code (WaC)** (often abbreviated as WACO) emerged as a logical extension of **Infrastructure-as-Code (IaC)** and **Configuration-as-Code (CasC)**. Traditionally, it was defined by three pillars:
