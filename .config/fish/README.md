@@ -1,7 +1,6 @@
-# 📑 Performance Optimization of Shell Startup Latency: A Bounded-Context, Zero-Fork Architecture for the Fish Shell on Apple Silicon macOS
+## Zero-Fork Architecture for the Fish Shell on Apple Silicon macOS
 
 **Author:** zx0r  
-**Role:** Principal Architect  
 **Classification:** Workstation-as-Code (WaC) Reference Architecture  
 **SLA Target:** < 25ms Cold Startup Latency (Achieved: **23.7ms**)
 
