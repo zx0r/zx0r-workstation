@@ -136,10 +136,4 @@ if test -f "$static_cache_directory_path/atuin.fish"
     bind -M insert \cr _atuin_search
 end
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Maintenance Utility
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function refresh_shell_cache --description "Clear static fish shell cache and reload"
-    rm -rf "$XDG_CACHE_HOME/fish/static_init"
-    exec fish
-end
+

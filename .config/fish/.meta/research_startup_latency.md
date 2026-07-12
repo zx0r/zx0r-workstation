@@ -100,8 +100,22 @@ We isolated the completions registry and environment variables into lazy loading
 
 ---
 
-## V. Validation & Target Verification
-Following Phase 2, a clean cache reload was run (`refresh_shell_cache`):
+## V. Phase 3: Autoloading Refactoring for Utility Functions
+### 1. Telemetry and Identification
+A third audit focused on lexical parsing overhead during boot. In Fish, defining functions inside configuration files forces the interpreter to parse and compile their syntax blocks sequentially during startup, even if the functions are never called. 
+
+The file `conf.d/25-fs-utils.fish` declared over 20 filesystem and fuzzy search utilities (such as `up`, `mkcd`, `Rg`, `TODOS`, `gitf`, etc.), representing ~250 lines of code. Traces indicated this file read took **~1.6 - 2.2 ms** on boot. Additionally, `fzf_preview`, `refresh_shell_cache`, and `mise-bootstrap` were also defined in `conf.d/` initializers.
+
+### 2. Architectural Remediation
+Following Fish best practices, we completely decoupled function definitions from startup Initializers.
+*   **Action:** Deleted `conf.d/25-fs-utils.fish` entirely.
+*   **Autoloading Migration:** Moved all 23 functions to their own files inside `functions/` (e.g., `functions/up.fish`, `functions/fzf_preview.fish`, etc.).
+Now, the shell starts up without parsing any of these utility functions. They are compiled and loaded on-demand only when executed.
+
+---
+
+## VI. Validation & Target Verification
+Following Phase 3, a clean cache reload was run (`refresh_shell_cache`):
 ```text
 ==========================================================================
  ⚡ Fish Shell Startup Latency Profiler & Benchmark Suite
@@ -111,8 +125,8 @@ Following Phase 2, a clean cache reload was run (`refresh_shell_cache`):
   Executing hyperfine benchmark (10 warmup, 50 runs)...
 
 Benchmark 1: fish -i -c exit
-  Time (mean ± σ):      21.2 ms ±   1.5 ms    [User: 13.8 ms, System: 5.9 ms]
-  Range (min … max):    19.8 ms …  26.4 ms    50 runs
+  Time (mean ± σ):      20.1 ms ±   1.0 ms    [User: 13.1 ms, System: 5.6 ms]
+  Range (min … max):    19.0 ms …  22.9 ms    50 runs
 ```
 
 ### Empirical Comparison
@@ -121,4 +135,5 @@ Benchmark 1: fish -i -c exit
 | **Bare-metal Fish (`--no-config`)** | 9.5 ms ± 1.0 ms | 0.0 ms |
 | **Legacy configuration (Atuin subprocesses)** | ~64.5 ms | ~55.0 ms |
 | **Initial Optimization (Mise Decoupled, Cache Normalized)** | 32.08 ms | 22.58 ms |
-| **Current State (Zero-Fork GPG_TTY & Lazy Mamba)** | **21.0 ms ± 1.7 ms** | **11.5 ms** |
+| **GPG_TTY & Lazy Mamba Optimization (Phase 1-2)** | 21.0 ms ± 1.7 ms | 11.5 ms |
+| **Fully Autoloaded Helper Functions (Phase 3)** | **20.1 ms ± 1.0 ms** | **10.6 ms** |

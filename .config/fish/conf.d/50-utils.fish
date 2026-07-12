@@ -7,8 +7,8 @@
 # dependencies: []
 # backlinks: ["config.fish"]
 # created_at: "2026-06-24"
-# updated_at: "2026-06-29"
-# last_commit: "853273b8893d56d11bcf030b42de63bfa22f1837"
+# updated_at: "2026-07-12"
+# last_commit: "pending"
 # tags: ["tooling", "utils"]
 # ---
 
@@ -91,35 +91,4 @@ if type -q brew
             set -gx PATH "$CURL_BIN" $PATH
         end
     end
-end
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 6. Mise Bootstrap (Helper command, manually executed)
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function mise-bootstrap --description "Bootstrap the entire mise infrastructure"
-    echo "🛠️ Starting Full Mise Infrastructure Setup..."
-
-    # 1. Install mise if missing
-    if not type -q mise
-        echo "🚀 Mise missing. Bootstrapping environment..."
-        if type -q brew
-            brew install mise
-        else
-            curl https://mise.run | sh
-        end
-    end
-
-    # 2. Configure global mise behaviors
-    mise settings set experimental true
-    mise settings set trusted_config_paths ~/.config/mise
-
-    # 3. Provision the Global Tech Stack
-    echo "📦 Installing Global Tooling (Node 25, Bun, Python 3.14, PNPM)..."
-    mise use --global bun@latest node@latest pnpm@latest python@latest rust@latest
-
-    # 4. Cleanup and Validation
-    mise cache clear
-    mise doctor
-
-    echo "✅ Infrastructure is ready. Please restart your terminal session."
 end
