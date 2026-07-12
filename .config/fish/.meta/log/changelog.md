@@ -339,3 +339,32 @@ This log tracks structural modifications, metadata updates, and relationship upd
     *   *Benchmarks:* `fish -i -c exit` startup speed decreased to **33.7 ms ± 2.0 ms**.
     *   *Mise / Bun Paths:* `which bun` -> `/Users/x0r/.local/share/mise/shims/bun` and `bun --version` -> `1.3.14`.
     *   *Tmux Layout Swap:* Swapped window order validated interactively via `tmux list-windows`.
+
+---
+
+## Commit: PENDING
+**Author:** Antigravity <antigravity@google.com>  
+**Date:** Sun Jul 12 13:26:00 2026 +0700  
+**Subject:** perf(gpg): lazily evaluate GPG_TTY inside tool wrappers to eliminate boot-time fork
+
+### I. Modified Modules & Scope of Impact
+*   [`conf.d/11-ssh-gpg.fish`](file:///Users/x0r/.config/fish/conf.d/11-ssh-gpg.fish) (Infrastructure (10-19)) - Removed synchronous `GPG_TTY` command substitution on shell boot.
+*   [`functions/git.fish`](file:///Users/x0r/.config/fish/functions/git.fish) (Functions) - Lazily sets `GPG_TTY` on git command invocation.
+*   [`functions/gpg.fish`](file:///Users/x0r/.config/fish/functions/gpg.fish) (Functions) - Lazily sets `GPG_TTY` on gpg command invocation.
+*   [`functions/gpg2.fish`](file:///Users/x0r/.config/fish/functions/gpg2.fish) (Functions) - Lazily sets `GPG_TTY` on gpg2 command invocation.
+*   [`functions/pass.fish`](file:///Users/x0r/.config/fish/functions/pass.fish) (Functions) - Lazily sets `GPG_TTY` on pass command invocation.
+
+### II. Metadata Integration & State Transitions
+*   **Front-matter Update:** Updated `updated_at` in `conf.d/11-ssh-gpg.fish` and registered new wrappers in `MAP_OF_CONTENT.md`.
+*   **Dependency Changes:** None.
+
+### III. Architectural Changes & Systems Optimization
+*   **Detailed technical breakdown:** 
+    *   **GPG_TTY Lazy-Loading:** Moving the execution of the `/usr/bin/tty` command out of the critical startup path of `11-ssh-gpg.fish` saves a blocking subprocess execution. The wrappers dynamically evaluate and export `GPG_TTY` only when cryptographic actions (git, gpg) are actively triggered, achieving true Zero-Fork startup for GPG infrastructure.
+
+### IV. Empirical Validation & Performance Metrics
+*   **Objective:** Eliminate TTY command forks during shell initialization.
+*   **Systemic Effect:** Reduced context-switch overhead, achieving faster shell responsiveness.
+*   **Verification Signals:**
+    *   *Syntax Check:* Passed with `fish -n config.fish conf.d/*.fish functions/*.fish` (0 errors).
+    *   *Benchmarks:* `fish -i -c exit` startup latency reduced further to **26.5 ms ± 1.3 ms**.

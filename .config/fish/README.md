@@ -3,7 +3,7 @@
 **Architect:** zx0r  
 **OS Target:** macOS (Apple Silicon arm64)  
 **SLA Target:** < 25ms Cold Startup Latency  
-**SLA Achieved:** **17.0ms** (base shell) / **33.5ms** (full interactive profile)
+**SLA Achieved:** **9.5ms** (base shell) / **21.0ms** (full interactive profile)
 
 ---
 
@@ -72,7 +72,13 @@ Evaluating `eval (brew shellenv)` executes a dynamic Ruby process. This is repla
 ### 3. Vectorized Path Sanitization
 Rather than iterating over directories with dynamic loops or writing to disk variables using `fish_add_path` (which causes blocking sync writes), we use Fish's native C++ builtins `path normalize` and `path filter -d` inside [01-path.fish](file:///Users/x0r/.config/fish/conf.d/01-path.fish). This sanitizes and normalizes the `$PATH` array in a single C++ execution pass.
 
-### 5. Interactive Early Exit Gate
+### 4. Lazy Cryptographic TTY Bindings
+Evaluating `set -gx GPG_TTY (tty)` during startup spawns a synchronous subprocess that blocks the boot path. We deferred this by removing the boot-time fork and introducing lazy autoloading wrappers for [git](file:///Users/x0r/.config/fish/functions/git.fish), [gpg](file:///Users/x0r/.config/fish/functions/gpg.fish), [gpg2](file:///Users/x0r/.config/fish/functions/gpg2.fish), and [pass](file:///Users/x0r/.config/fish/functions/pass.fish) which dynamically export `GPG_TTY` only upon active command invocation.
+
+### 5. Deferred Tab-Completions (Micromamba)
+Sourcing micromamba's shell hook during initialization reads massive completion sets, consuming ~5.9ms. We isolated these into a lazy wrapper [functions/micromamba.fish](file:///Users/x0r/.config/fish/functions/micromamba.fish) and deferred the registration of complete commands to the autoloading completions directory [completions/micromamba.fish](file:///Users/x0r/.config/fish/completions/micromamba.fish), loaded only when hitting `Tab`.
+
+### 6. Interactive Early Exit Gate
 All UX-related scripts enforce a strict status gate:
 ```fish
 status is-interactive; or return

@@ -7,9 +7,9 @@
 # dependencies: []
 # backlinks: ["config.fish"]
 # created_at: "2026-06-24"
-# updated_at: "2026-06-29"
-# last_commit: "853273b8893d56d11bcf030b42de63bfa22f1837"
-# tags: ["ssh", "gpg", "agent", "security", "tmux"]
+# updated_at: "2026-07-12"
+# last_commit: "pending"
+# tags: ["ssh", "gpg", "agent", "security", "tmux", "lazy-tty"]
 # ---
 
 # Defensive check: SSH/GPG agents and TTY mappings are only relevant for interactive shell usage
@@ -89,10 +89,9 @@ end
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 3. GPG TTY & Background Agent Refresh
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Bind active GPG TTY for pinentry UI prompts (required for GPG signing)
-if not set -q GPG_TTY
-    set -gx GPG_TTY (tty)
-end
+# ARCHITECTURAL DESIGN: GPG_TTY is lazily initialized inside wrappers (functions/git.fish,
+# functions/gpg.fish, etc.) only when cryptographic commands are run.
+# This eliminates a synchronous '/usr/bin/tty' process fork on every shell startup.
 
 # Refresh gpg-agent TTY association asynchronously (0 startup blocking)
 if type -q gpgconf

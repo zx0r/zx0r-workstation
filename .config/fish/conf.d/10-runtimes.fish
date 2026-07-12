@@ -3,7 +3,7 @@
 # id: "conf.d/10-runtimes.fish"
 # title: "Self-Healing Runtime Cache Engine"
 # layer: "Infrastructure (10-19)"
-# responsibility: "Manages compiled static initializers for Micromamba, Mise, Starship, Zoxide, Atuin, and FZF with parallel invalidation and native UUID generation"
+# responsibility: "Manages compiled static initializers for Mise, Starship, Zoxide, Atuin, and FZF with parallel invalidation and native UUID generation"
 # dependencies: ["conf.d/01-variables.fish"]
 # backlinks: ["config.fish"]
 # created_at: "2026-06-24"
@@ -24,25 +24,6 @@ set -l cache_pids
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 1. Check & Spawn Cache Generation
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-# --- Micromamba (Python Environment Manager) ---
-set -gx MAMBA_ROOT_PREFIX "$HOME/.local/share/mamba"
-set -l mamba_binary_path "/Users/x0r/.local/share/mise/installs/micromamba/latest/bin/micromamba"
-set -l should_regenerate_mamba_cache 0
-
-if test -f "$mamba_binary_path"
-    set -gx MAMBA_EXE "$mamba_binary_path"
-    if not test -f "$static_cache_directory_path/mamba.fish"
-        set should_regenerate_mamba_cache 1
-    else if test "$mamba_binary_path" -nt "$static_cache_directory_path/mamba.fish"
-        set should_regenerate_mamba_cache 1
-    end
-end
-
-if test $should_regenerate_mamba_cache -eq 1
-    $MAMBA_EXE shell hook --shell fish --root-prefix $MAMBA_ROOT_PREFIX >"$static_cache_directory_path/mamba.fish" &
-    set -a cache_pids $last_pid
-end
 
 # --- Mise (Polyglot Runtime Engine) ---
 # ARCHITECTURAL DESIGN: Sourcing 'mise activate' is intentionally bypassed to satisfy
@@ -138,9 +119,7 @@ if set -q cache_pids[1]
     end
 end
 
-if test -f "$static_cache_directory_path/mamba.fish"
-    source "$static_cache_directory_path/mamba.fish"
-end
+
 
 
 if test -f "$static_cache_directory_path/starship.fish"

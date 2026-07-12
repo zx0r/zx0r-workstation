@@ -30,7 +30,7 @@ function profile_startup -d "Profiles fish shell startup latency, lists hotspots
     echo (set_color -o yellow)"[2/4] Cache & Security Topology Status"(set_color normal)
     set -l cache_dir "$XDG_CACHE_HOME/fish/static_init"
     if test -d "$cache_dir"
-        set -l cache_files atuin.fish fzf.fish mamba.fish starship.fish zoxide.fish
+        set -l cache_files atuin.fish fzf.fish starship.fish zoxide.fish
         for file in $cache_files
             set -l path "$cache_dir/$file"
             if test -f "$path"
