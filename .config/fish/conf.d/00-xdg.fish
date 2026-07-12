@@ -7,10 +7,17 @@
 # dependencies: []
 # backlinks: ["config.fish", "conf.d/01-path.fish", "conf.d/01-variables.fish"]
 # created_at: "2026-06-24"
-# updated_at: "2026-06-25"
-# last_commit: "853273b8893d56d11bcf030b42de63bfa22f1837"
+# updated_at: "2026-07-13"
+# last_commit: "pending"
 # tags: ["xdg", "directory", "bootstrap"]
 # ---
+
+# 0. Vendor Hook Guard (Zero-Fork SLA enforcement)
+# Fish 4.x loads $__fish_config_dir/conf.d/ BEFORE $__fish_vendor_confdirs/, so setting
+# this flag here guarantees it is visible when /opt/homebrew/share/fish/vendor_conf.d/mise-activate.fish
+# runs later in the same startup sequence, suppressing its 'mise activate fish | source' (~40ms fork).
+# NOTE: -gx is sufficient here - no need for -Ux because this file re-runs on every shell init.
+set -gx MISE_FISH_AUTO_ACTIVATE 0
 
 # 1. XDG Base Directories (Performance Optimized / Fallbacks)
 set -q XDG_CONFIG_HOME; or set -gx XDG_CONFIG_HOME "$HOME/.config"

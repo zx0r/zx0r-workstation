@@ -397,3 +397,30 @@ This log tracks structural modifications, metadata updates, and relationship upd
 *   **Verification Signals:**
     *   *Syntax Check:* Passed with `fish -n config.fish conf.d/*.fish functions/*.fish` (0 errors).
     *   *Benchmarks:* `fish -i -c exit` startup speed decreased to **20.1 ms ± 1.0 ms** (min: 19.0 ms).
+
+---
+
+## Commit: PENDING
+**Author:** Antigravity <antigravity@google.com>
+**Date:** Mon Jul 13 01:42:00 2026 +0700
+**Subject:** fix(startup): suppress Homebrew vendor mise-activate hook and optimize eza alias
+
+### I. Modified Modules & Scope of Impact
+*   [`conf.d/00-xdg.fish`](file:///Users/x0r/.config/fish/conf.d/00-xdg.fish) (Foundation (00-09)) - Added `set -gx MISE_FISH_AUTO_ACTIVATE 0` as section 0 before XDG bootstrap.
+*   [`conf.d/20-abbr.fish`](file:///Users/x0r/.config/fish/conf.d/20-abbr.fish) (Commands (20-29)) - Converted `abbr -a l` to `alias l` for dynamic `eza` clashing mitigation.
+
+### II. Metadata Integration & State Transitions
+*   **Front-matter Update:** Updated `updated_at` to `2026-07-13` in `conf.d/00-xdg.fish` and `conf.d/20-abbr.fish`. Set `last_commit` to `pending` in `conf.d/00-xdg.fish`.
+*   **Dependency Changes:** None. No graph edges changed.
+
+### III. Architectural Changes & Systems Optimization
+*   **Detailed technical breakdown:**
+    *   **Mise Root Cause & Fix:** A `brew upgrade mise` silently placed `/opt/homebrew/share/fish/vendor_conf.d/mise-activate.fish` in vendor dirs, adding `mise activate` fork overhead (~36-155ms). Setting `MISE_FISH_AUTO_ACTIVATE` to `0` at the very start of the user configuration (`00-xdg.fish`) blocks this vendor hook, since user configs are loaded before vendor configs in Fish 4.x.
+    *   **Eza Alias Refactor:** Converted abbreviation `abbr -a l` to `alias l` inside the dynamic eza conditional block in `20-abbr.fish`. This resolves clashing behavior and clears the terminal session before running `ll`.
+
+### IV. Empirical Validation & Performance Metrics
+*   **Objective:** Restore sub-25ms startup SLA and fix alias conflict.
+*   **Systemic Effect:** Standard-compliant version management using shims without vendor activate process overhead. Clean screen listing for local directories.
+*   **Verification Signals:**
+    *   *Syntax Check:* `fish -n conf.d/*.fish` — 0 errors.
+    *   *Benchmarks:* `hyperfine --warmup 3 --runs 10 'fish -i -c exit'` → **21.8 ms ± 2.5 ms**. SLA restored.

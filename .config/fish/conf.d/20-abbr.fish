@@ -7,7 +7,7 @@
 # dependencies: []
 # backlinks: ["config.fish"]
 # created_at: "2026-06-24"
-# updated_at: "2026-07-12"
+# updated_at: "2026-07-13"
 # last_commit: "pending"
 # tags: ["abbreviations", "shortcuts", "productivity"]
 # ---
@@ -162,6 +162,7 @@ abbr -a chmod+ 'chmod ug+x'
 
 # 8. Dynamic eza / ls Setup (Avoids duplicate 'l' definition clashing)
 if type -q eza
+    alias l "clear && ll"
     alias l. "eza -a | egrep '^\.'"
     alias ls "eza -al --color=always --group-directories-first"
     alias la "eza -a --color=always --group-directories-first"
@@ -172,7 +173,6 @@ if type -q eza
     abbr -a t2 "eza --tree --level=2 --color=always --group-directories-first --icons=auto -snew"
     abbr -a t3 "eza --tree --level=3 --color=always --group-directories-first --icons=auto -snew"
     abbr -a t4 "eza --tree --level=4 --color=always --group-directories-first --icons=auto -snew"
-    abbr -a l "clear && ll"
 else
     abbr -a l "ls -lah"
     abbr -a la "ls -A"
