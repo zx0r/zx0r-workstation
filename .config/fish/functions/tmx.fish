@@ -7,8 +7,8 @@
 # dependencies: ["tmux", "fzf"]
 # backlinks: []
 # created_at: "2026-06-25"
-# updated_at: "2026-06-25"
-# last_commit: ""
+# updated_at: "2026-07-12"
+# last_commit: "pending"
 # tags: ["tmux", "fzf", "utility"]
 # ---
 
@@ -211,7 +211,7 @@ end
 
 function __tmx_daily_template
     set -l session_name Workspace
-    set -l w_names Dev Run Ops
+    set -l w_names Dev Ops Run
     set -l layout tiled
 
     if tmux has-session -t "$session_name" 2>/dev/null
@@ -237,19 +237,19 @@ function __tmx_daily_template
     tmux split-window -t "$session_name:"
     tmux select-layout -t "$session_name:" even-horizontal
 
-    # RUN (4 tiled panes) -> runtime / agents / servers / apps
+    # OPS -> git / docker / infrastructure
     tmux new-window -t "$session_name:" -n $w_names[2]
+    tmux split-window -t "$session_name:"
+    tmux select-layout -t "$session_name:" even-horizontal
+
+    # RUN (4 tiled panes) -> runtime / agents / servers / apps
+    tmux new-window -t "$session_name:" -n $w_names[3]
 
     tmux split-window -h -t "$session_name:"
     tmux split-window -v -t "$session_name:".0
     tmux split-window -v -t "$session_name:".1
 
     tmux select-layout -t "$session_name:" "$layout"
-
-    # OPS -> git / docker / infrastructure
-    tmux new-window -t "$session_name:" -n $w_names[3]
-    tmux split-window -t "$session_name:"
-    tmux select-layout -t "$session_name:" even-horizontal
 
     # Focus DEV
     tmux select-window -t "$session_name:1" 2>/dev/null

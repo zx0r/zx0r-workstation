@@ -3,18 +3,24 @@
 # id: "conf.d/01-path.fish"
 # title: "Vectorized Native PATH Sanitization"
 # layer: "Foundation (00-09)"
-# responsibility: "Normalizes, sanitizes, and exports system search paths using C++ builtins"
+# responsibility: "Normalizes, sanitizes, and exports system search paths using C++ builtins. Mise shims are the single source of truth for all managed runtimes."
 # dependencies: ["conf.d/00-xdg.fish"]
 # backlinks: ["config.fish", "conf.d/02-brew.fish"]
 # created_at: "2026-06-24"
-# updated_at: "2026-06-26"
-# last_commit: "a7e6fbd6903547553ea6928408916059d72f21de"
-# tags: ["path"]
+# updated_at: "2026-07-12"
+# last_commit: "pending"
+# tags: ["path", "mise", "shims"]
 # ---
 
 # 1. High-priority search paths to prepend (in order of priority: first is highest)
-# Listed in reverse order of priority because prepending them one by one in a loop reverses them
-set -l prepend_paths "$BOB_HOME" /opt/homebrew/sbin /opt/homebrew/bin
+# Listed in reverse order of priority because prepending them one by one in a loop reverses them.
+#
+# ARCHITECTURAL INVARIANT: mise shims (~/.local/share/mise/shims) MUST be listed LAST here
+# (= highest priority in the final PATH) so that all mise-managed runtimes (bun, node, go, etc.)
+# resolve through the shim dispatcher — NOT via hardcoded installs/* paths.
+# This is the single source of truth for runtime version management.
+set -l mise_shims_dir "$HOME/.local/share/mise/shims"
+set -l prepend_paths "$BOB_HOME" /opt/homebrew/sbin /opt/homebrew/bin "$mise_shims_dir"
 
 # 2. Essential default system paths that must always be present in PATH (fallback priority)
 set -l default_system_paths /usr/local/bin /usr/bin /bin /usr/sbin /sbin /usr/local/sbin

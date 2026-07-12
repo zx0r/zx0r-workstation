@@ -7,9 +7,9 @@
 # dependencies: []
 # backlinks: ["config.fish"]
 # created_at: "2026-06-26"
-# updated_at: "2026-06-29"
-# last_commit: "a7e6fbd6903547553ea6928408916059d72f21de"
-# tags: ["fzf", "tooling", "fuzzy-finder"]
+# updated_at: "2026-07-12"
+# last_commit: "pending"
+# tags: ["fzf", "tooling", "fuzzy-finder", "xdg", "cache"]
 # ---
 
 # FZF Preview Options & Bindings combined (prevents variable shadowing and overwriting issues)
@@ -84,7 +84,7 @@ set -gx FZF_DEFAULT_OPTS "$FZF_GENERAL_OPTS $FZF_COLOR_OPTS $FZF_PREVIEW_OPTS $F
 # Ensure fzf is installed before setting up key bindings
 if status is-interactive
     if type -q fzf
-        set -l static_cache_directory_path "$HOME/.cache/fish/static_init"
+        set -l static_cache_directory_path "$XDG_CACHE_HOME/fish/static_init"
         if test -f "$static_cache_directory_path/fzf.fish"
             source "$static_cache_directory_path/fzf.fish"
         end

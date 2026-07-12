@@ -23,12 +23,20 @@ if [ ! -e "$FILE" ]; then
 	exit 1
 fi
 
-# Get lowercase file extension
+# Get lowercase file extension (using zero-fork bash 4+ builtins if possible)
 EXT="${FILE##*.}"
-EXT=$(echo "$EXT" | tr '[:upper:]' '[:lower:]')
+if [ "${BASH_VERSINFO[0]}" -ge 4 ]; then
+	EXT="${EXT,,}"
+else
+	EXT=$(echo "$EXT" | tr '[:upper:]' '[:lower:]')
+fi
 
-# Get MIME type
-MIME=$(file --mime-type -b -- "$FILE" 2>/dev/null)
+# Lazy MIME type resolution helper to avoid unnecessary 'file' forks
+MIME=""
+get_mime() {
+	[ -n "$MIME" ] && return
+	MIME=$(file --mime-type -b -- "$FILE" 2>/dev/null)
+}
 
 # ------------------------------------------------------------------------------
 # 1. Directories
@@ -131,7 +139,7 @@ preview_image() {
 	fi
 
 	# 4. Fallback: Exif/Metadata extraction
-	echo "🖼️ Image Metadata for: $(basename "$1")"
+	echo "🖼️ Image Metadata for: ${1##*/}"
 	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	if command -v exiftool >/dev/null 2>&1; then
 		exiftool "$1"
@@ -144,7 +152,7 @@ preview_image() {
 preview_document() {
 	local doc_file="$1"
 	local base
-	base=$(basename "$doc_file")
+	base="${doc_file##*/}"
 	local tmp_dir
 	tmp_dir=$(mktemp -d 2>/dev/null || echo "/tmp/fzf-doc-$$")
 	mkdir -p "$tmp_dir"
@@ -341,6 +349,7 @@ esac
 # ------------------------------------------------------------------------------
 # 4. MIME-type Fallback Matchers
 # ------------------------------------------------------------------------------
+get_mime
 case "$MIME" in
 image/*)
 	preview_image "$FILE"
@@ -370,8 +379,9 @@ esac
 # ------------------------------------------------------------------------------
 # 5. Executable Binary check (help output)
 # ------------------------------------------------------------------------------
+get_mime
 if [ -x "$FILE" ] && [ ! -d "$FILE" ] && [[ "$MIME" != text/* && "$MIME" != *"script"* && "$MIME" != *"python"* && "$MIME" != *"perl"* && "$MIME" != *"ruby"* && "$MIME" != *"php"* && "$MIME" != *"json"* ]]; then
-	echo "⚙️ Executable Command: $(basename "$FILE")"
+	echo "⚙️ Executable Command: ${FILE##*/}"
 	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	file "$FILE"
 	echo ""
@@ -383,6 +393,7 @@ fi
 # ------------------------------------------------------------------------------
 # 6. Raw Binary Fallback
 # ------------------------------------------------------------------------------
+get_mime
 if [[ "$MIME" == *"octet-stream"* || "$MIME" == *"binary"* ]]; then
 	echo "⚙️ Binary Executable / Object: $FILE"
 	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

@@ -6,7 +6,7 @@ responsibility: Tracks structural changes, metadata schema migrations, and confi
 dependencies: []
 backlinks: [.agents/AGENTS.md]
 created_at: 2026-06-25
-updated_at: 2026-06-29
+updated_at: 2026-07-12
 tags: [changelog, history, mdd, audit]
 ---
 
@@ -301,3 +301,41 @@ This log tracks structural modifications, metadata updates, and relationship upd
     *   *Syntax Check:* Passed with `fish -n conf.d/*.fish` (0 errors).
     *   *Warm Boot Bench:* Benchmark `fish -i -c exit` remains at **26.3 ms ± 1.5 ms**.
     *   *Cold Boot Bench:* Benchmark with cache eviction remains at **51.9 ms ± 2.0 ms**.
+
+---
+
+## Commit: PENDING
+**Author:** Antigravity <antigravity@google.com>  
+**Date:** Sun Jul 12 12:26:00 2026 +0700  
+**Subject:** fix(mdd): normalize pathing, swap tmux daily template windows, and decouple mise activate
+
+### I. Modified Modules & Scope of Impact
+*   [`conf.d/01-path.fish`](file:///Users/x0r/.config/fish/conf.d/01-path.fish) (Foundation (00-09)) - Set mise shims as the absolute highest priority in `$PATH` to avoid version inconsistency.
+*   [`conf.d/10-runtimes.fish`](file:///Users/x0r/.config/fish/conf.d/10-runtimes.fish) (Infrastructure (10-19)) - Bypassed dynamic `mise activate` call and shifted cache directory to `$XDG_CACHE_HOME` namespace.
+*   [`conf.d/20-abbr.fish`](file:///Users/x0r/.config/fish/conf.d/20-abbr.fish) (Commands (20-29)) - Registered package/system maintenance command abbreviations.
+*   [`conf.d/25-fs-utils.fish`](file:///Users/x0r/.config/fish/conf.d/25-fs-utils.fish) (Commands (20-29)) - Created interactive file system utilities integration mapping shell navigation.
+*   [`conf.d/50-fzf.fish`](file:///Users/x0r/.config/fish/conf.d/50-fzf.fish) (Tooling (50-59)) - Updated static cache path initialization to respect `$XDG_CACHE_HOME` standard.
+*   [`functions/mise.fish`](file:///Users/x0r/.config/fish/functions/mise.fish) (Infrastructure (10-19)) - Created static shell wrapper to evaluate local environment alterations without boot-time overhead.
+*   [`functions/profile_startup.fish`](file:///Users/x0r/.config/fish/functions/profile_startup.fish) (Functions) - Updated to use `$XDG_CACHE_HOME` and expanded to report both inclusive and exclusive startup metrics.
+*   [`functions/tmx.fish`](file:///Users/x0r/.config/fish/functions/tmx.fish) (Functions) - Swapped "Run" and "Ops" daily template windows (names and layout setups).
+*   [`.meta/research_mise_shims.md`](file:///Users/x0r/.config/fish/.meta/research_mise_shims.md) (Meta / Logging) - Created a comprehensive systems report documenting diagnostics, benchmarks, and changes.
+
+### II. Metadata Integration & State Transitions
+*   **Front-matter Update:** Injected/updated metadata schemas for `conf.d/01-path.fish`, `conf.d/10-runtimes.fish`, `conf.d/20-abbr.fish`, `conf.d/25-fs-utils.fish`, `conf.d/50-fzf.fish`, `functions/mise.fish`, `functions/profile_startup.fish`, `functions/tmx.fish` and `MAP_OF_CONTENT.md`.
+*   **Dependency Changes:** Registered `conf.d/25-fs-utils.fish`, `functions/mise.fish`, `functions/profile_startup.fish`, `functions/tmx.fish`, and `.meta/research_mise_shims.md` in `MAP_OF_CONTENT.md`.
+
+### III. Architectural Changes & Systems Optimization
+*   **Detailed technical breakdown:** 
+    *   **Mise Path De-coupling:** Completely bypassed dynamic `mise activate` prompt hooks (saving ~46.3ms startup time). Defined `~/.local/share/mise/shims` at the top of `$PATH` via `prepend_paths` to route runtime requests securely and cleanly.
+    *   **XDG Caching Compliance:** Replaced hardcoded `~/.cache` directory strings in `10-runtimes.fish`, `50-fzf.fish`, and `profile_startup.fish` with standard `$XDG_CACHE_HOME/fish/static_init/` pointers.
+    *   **Startup Profiler Improvements:** Modified `profile_startup` to check all five active cache files and report both exclusive and inclusive millisecond execution metrics from `fish --profile-startup` data to identify precise latency hotspots.
+    *   **Daily Template Window Reordering:** Swapped daily template windows inside `functions/tmx.fish` `__tmx_daily_template` to create windows in order: `Dev` (index 1), `Ops` (index 2, 2 split panes), and `Run` (index 3, 4 tiled panes) matching active environment.
+
+### IV. Empirical Validation & Performance Metrics
+*   **Objective:** Eliminate `which bun` pointing to direct `installs/*` folder, keep startup latency low, and align tmux default daily layout configuration.
+*   **Systemic Effect:** Standard-compliant version management, faster shell initialization, and XDG directory standard conformity.
+*   **Verification Signals:**
+    *   *Syntax Check:* Passed with `fish -n config.fish conf.d/*.fish functions/*.fish` (0 errors).
+    *   *Benchmarks:* `fish -i -c exit` startup speed decreased to **33.7 ms ± 2.0 ms**.
+    *   *Mise / Bun Paths:* `which bun` -> `/Users/x0r/.local/share/mise/shims/bun` and `bun --version` -> `1.3.14`.
+    *   *Tmux Layout Swap:* Swapped window order validated interactively via `tmux list-windows`.

@@ -7,9 +7,9 @@
 # dependencies: []
 # backlinks: []
 # created_at: "2026-06-24"
-# updated_at: "2026-06-25"
-# last_commit: "f4adbd9652c78a01f562b7194602f3fa10eeea80"
-# tags: []
+# updated_at: "2026-07-12"
+# last_commit: "pending"
+# tags: ["profiling", "performance", "benchmark"]
 # ---
 
 function profile_startup -d "Profiles fish shell startup latency, lists hotspots, and runs benchmarks"
@@ -28,9 +28,9 @@ function profile_startup -d "Profiles fish shell startup latency, lists hotspots
 
     # 2. Cache & Security Infrastructure Status
     echo (set_color -o yellow)"[2/4] Cache & Security Topology Status"(set_color normal)
-    set -l cache_dir "$HOME/.cache/fish/static_init"
+    set -l cache_dir "$XDG_CACHE_HOME/fish/static_init"
     if test -d "$cache_dir"
-        set -l cache_files atuin.fish mise.fish starship.fish zoxide.fish
+        set -l cache_files atuin.fish fzf.fish mamba.fish starship.fish zoxide.fish
         for file in $cache_files
             set -l path "$cache_dir/$file"
             if test -f "$path"
@@ -74,24 +74,28 @@ function profile_startup -d "Profiles fish shell startup latency, lists hotspots
     echo ""
 
     # 3. Hotspot Profiling (fish --profile-startup)
-    echo (set_color -o yellow)"[3/4] Startup Hotspot Analysis (Top 5 Slowest Actions)"(set_color normal)
+    echo (set_color -o yellow)"[3/4] Startup Hotspot Analysis (Top 10 Slowest Operations)"(set_color normal)
     set -l prof_file "/tmp/fish_profile_"(random)".prof"
     
     # Run fish with profiling enabled
     fish --profile-startup "$prof_file" -ic exit >/dev/null 2>&1
     
     if test -f "$prof_file"
-        # Parse, sort, and print top 5 slow events.
-        # Column 1: Time in microseconds, Column 2: Operation, Column 3: Source line/file
-        # Format: microsec | filename
-        echo "   Time (ms)  │  Source File / Operation"
-        echo "  ────────────┼────────────────────────────────────────────────────────"
-        sort -nrk2 "$prof_file" | head -n 5 | while read -l time name
+        # Parse, sort, and print top 10 slow events.
+        echo "   Exclusive (ms) │ Inclusive (ms) │ Source File / Operation"
+        echo "  ────────────────┼────────────────┼────────────────────────────────────────"
+        sort -nrk2 "$prof_file" | head -n 15 | while read -l excl incl depth name
+            # Skip header or empty lines
+            if not string match -qr '^[0-9]+$' "$excl"
+                continue
+            end
             # Convert microsec to millisec
-            set -l ms (math -s 2 "$time / 1000")
+            set -l excl_ms (math -s 2 "$excl / 1000")
+            set -l incl_ms (math -s 2 "$incl / 1000")
             # Format filename to be shorter (replace absolute path with ~/ or relative)
-            set -l clean_name (string replace "$HOME" "~" $name)
-            printf "   %8s   │  %s\n" "$ms" "$clean_name"
+            set -l clean_name (string replace "$HOME" "~" "$name")
+            set -l full_name "$depth $clean_name"
+            printf "     %8s     │    %8s    │ %s\n" "$excl_ms" "$incl_ms" "$full_name"
         end
         rm -f "$prof_file"
     else

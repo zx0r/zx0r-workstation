@@ -7,21 +7,107 @@
 # dependencies: []
 # backlinks: ["config.fish"]
 # created_at: "2026-06-24"
-# updated_at: "2026-06-25"
-# last_commit: "853273b8893d56d11bcf030b42de63bfa22f1837"
+# updated_at: "2026-07-12"
+# last_commit: "pending"
 # tags: ["abbreviations", "shortcuts", "productivity"]
 # ---
 
 # Defensive check: Abbreviations are only relevant for interactive shell usage
 status is-interactive; or return
 
-# 1. Package Management
-abbr -a brewup "brew update && brew upgrade && brew cleanup && brew doctor" # Update Homebrew packages
-abbr -a brew_clean "brew cleanup && brew autoremove" # Clean unused packages
+# --------------------------------------------------------------------- #
 
-# 2. System Maintenance & Controls
-abbr -a flushdns "sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder" # Clear DNS cache
-abbr -a restart-ui "killall Dock; killall Finder; killall SystemUIServer" # Refresh UI
+# System maintenance architecture:
+# - Boundary: each adapter owns one macOS subsystem: net, dns, ui.
+# - Naming grammar: <subsystem><operation>.
+# - Operations:
+#   reset = restart/reinitialize subsystem state
+#   clean = remove cache/state owned by subsystem
+#   check = inspect state without mutation
+# - Commands requiring sudo must stay explicit and narrow.
+# - Prefer native macOS tools; avoid mixing unrelated subsystems.
+
+# Network/system controls:
+# - Purpose: quick recovery and inspection for common macOS networking/UI issues.
+# - Context: Wi-Fi may use DHCP DNS by default; dnscrypton forces DNS through local dnscrypt-proxy at 127.0.0.1:53.
+# - Safety: commands with sudo mutate system network state; check before reset/clean when unsure.
+
+# network: interface control
+abbr -a netcheck 'ifconfig (networksetup -listallhardwareports | awk "/Wi-Fi|AirPort/{getline; print \$2}")'
+abbr -a netreset 'set iface (networksetup -listallhardwareports | awk "/Wi-Fi|AirPort/{getline; print \$2}"); sudo ifconfig $iface down; sudo ifconfig $iface up'
+abbr -a netactive 'route get default | awk "/interface:/{print \$2}"'
+abbr -a netservices 'networksetup -listallnetworkservices'
+
+# dns: resolver cache and DNSCrypt switching
+abbr -a dnsget 'networksetup -getdnsservers Wi-Fi'
+abbr -a dnscrypton 'sudo networksetup -setdnsservers Wi-Fi 127.0.0.1; sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder'
+abbr -a dnsauto 'sudo networksetup -setdnsservers Wi-Fi Empty; sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder'
+abbr -a dnscheck 'networksetup -getdnsservers Wi-Fi; scutil --dns | rg "nameserver|resolver"; dig example.com @127.0.0.1'
+abbr -a dnsclean 'sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder'
+abbr -a dnsservices 'for svc in (networksetup -listallnetworkservices | string match -v "\\*"); echo "[$svc]"; networksetup -getdnsservers "$svc"; end'
+
+# ui: restart user interface services without rebooting macOS
+abbr -a uireset 'killall Dock; killall Finder; killall SystemUIServer'
+
+# --------------------------------------------------------------------- #
+
+# Tool maintenance architecture:
+# - Boundary: each tool owns its lifecycle and storage: brew, mise, bun, npm, pip.
+# - Abbreviations are thin adapters over native tool commands.
+# - Naming grammar: <tool><operation>.
+# - Operations:
+#   get   = print canonical storage/cache path
+#   check = inspect state without mutation
+#   up    = update/upgrade managed artifacts
+#   clean = remove tool-owned safe/obsolete artifacts
+#   du    = inspect disk usage of canonical storage/cache path
+#   doc   = run diagnostics
+#   dry   = preview cleanup without mutation
+# - Low-level adapters must not cross tool boundaries.
+# - Cross-tool workflows belong only in the pkg* composition layer.
+# - Prefer native cleanup commands; use rm only for known cache roots.
+
+# brew: macOS packages, casks, native system tools
+abbr -a brewget 'brew --cache'
+abbr -a brewcheck 'brew update; brew outdated'
+abbr -a brewup 'brew update; brew upgrade'
+abbr -a brewclean 'brew autoremove; brew cleanup --prune=all'
+abbr -a brewdry 'brew cleanup --prune=all --dry-run'
+abbr -a brewdoc 'brew doctor'
+abbr -a brewdu 'dua (brew --cache)'
+
+# Homebrew: update -> upgrade -> autoremove -> cleanup
+# Updates Homebrew metadata, upgrades installed formulae/casks, removes unused dependencies, then prunes old cache artifacts.
+# 0 10 * * 0 /opt/homebrew/bin/brew update && /opt/homebrew/bin/brew upgrade && /opt/homebrew/bin/brew autoremove && /opt/homebrew/bin/brew cleanup --prune=all >> "$HOME/Library/Logs/brew-maintenance.log" 2>&1
+abbr -a brewcron 'brew update && brew upgrade && brew autoremove && brew cleanup --prune=all'
+
+# mise: runtime/tool version manager
+abbr -a miseget 'set -q MISE_DATA_DIR; and echo "$MISE_DATA_DIR"; or echo "$HOME/.local/share/mise"'
+abbr -a misecheck 'mise ls'
+abbr -a miseup 'mise upgrade'
+abbr -a miseclean 'mise prune'
+abbr -a misedu 'dua (set -q MISE_DATA_DIR; and echo "$MISE_DATA_DIR"; or echo "$HOME/.local/share/mise")'
+
+# bun: JS runtime/package-manager cache
+abbr -a bunget 'set -q XDG_CACHE_HOME; and echo "$XDG_CACHE_HOME/.bun"; or echo "$HOME/.cache/.bun"'
+abbr -a buncheck 'bun --version; which bun; mise where bun'
+abbr -a bundu 'dua (set -q XDG_CACHE_HOME; and echo "$XDG_CACHE_HOME/.bun"; or echo "$HOME/.cache/.bun")'
+abbr -a bunclean 'rm -ri (set -q XDG_CACHE_HOME; and echo "$XDG_CACHE_HOME/.bun"; or echo "$HOME/.cache/.bun")'
+
+# npm: legacy/global npm cache
+abbr -a npmget 'npm config get cache'
+abbr -a npmdu 'dua (npm config get cache)'
+abbr -a npmclean 'npm cache verify'
+
+# pip: Python package cache
+abbr -a pipget 'pip cache dir'
+abbr -a pipdu 'dua (pip cache dir)'
+abbr -a pipcheck 'pip cache info'
+abbr -a pipclean 'pip cache purge'
+
+# composition: explicit cross-tool workflows
+abbr -a pkgcheck 'brew update; brew outdated; mise ls; bun --version; pip cache info'
+abbr -a pkgclean 'brew autoremove; brew cleanup --prune=all; mise prune; npm cache verify; pip cache purge'
 
 # 3. Core Editor & Terminal Shorthands
 abbr -a c clear
@@ -196,5 +282,4 @@ if type -q kubectl
     abbr -a kbl 'kubectl logs'
 end
 
-# 17. Miscellaneous
 abbr -a valid_json 'python -m json.tool settings.json > /dev/null && echo "✅ Valid JSON"'

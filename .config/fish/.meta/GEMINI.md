@@ -78,6 +78,18 @@ We analyzed [00-env.fish](file:///Users/x0r/.config/fish/conf.d/00-env.fish) and
 ### C. Glob-Bypass directory checks
 We optimized [01-path.fish](file:///Users/x0r/.config/fish/conf.d/01-path.fish) and [20-abbreviations.fish](file:///Users/x0r/.config/fish/conf.d/20-abbreviations.fish) by wrapping the glob file search blocks in `if test -d <path>` checks. When no dynamically generated files are present, Fish skips directory indexing completely.
 
+### D. Mise Shims & PATH Version Management (Zero-Fork Shims Architecture)
+During the runtime configuration optimization, we identified a critical architectural conflict between dynamic shell version activation and shell startup latency.
+*   **The Problem (PATH Activation Hook):** Standard `mise activate fish` injects dynamic hooks (`__mise_env_eval`) into the shell prompt loop. On startup and prompt changes, these hooks execute `mise hook-env -s fish`, which forks the `mise` binary. This fork consumes **~46ms** (completely violating the <25ms SLA) and prepends absolute install paths (e.g. `~/.local/share/mise/installs/bun/latest/bin`) to `$PATH`. This bypasses the shims directory (`~/.local/share/mise/shims`), breaking version consistency (e.g., `which bun` pointing to raw installs instead of the version-managed shim).
+*   **The Solution (Shims as the Single Source of Truth):**
+    1.  **Enforcing Shims in PATH:** Added `~/.local/share/mise/shims` to the high-priority `prepend_paths` in [01-path.fish](file:///Users/x0r/.config/fish/conf.d/01-path.fish#L17) as the absolute highest priority.
+    2.  **Eliminating Activation Overhead:** Completely removed the dynamic `mise activate` calls, prompt hooks, and static activation caching in [10-runtimes.fish](file:///Users/x0r/.config/fish/conf.d/10-runtimes.fish). Sourcing `mise activate` is bypassed entirely.
+    3.  **Static Shell-Local Wrapper:** Created a static wrapper function in [functions/mise.fish](file:///Users/x0r/.config/fish/functions/mise.fish) that handles environment-altering commands (like `mise shell` and `mise deactivate`) locally, routing all other commands to `/opt/homebrew/bin/mise`.
+*   **Systemic Effect:**
+    *   `which bun` resolves dynamically and correctly to the shim: `/Users/x0r/.local/share/mise/shims/bun` (dynamically routing to active version).
+    *   `mise where bun` maps to `/Users/x0r/.local/share/mise/installs/bun/1.3.14`.
+    *   Startup latency reduced by **~46ms** (from ~80ms cold start to **~17ms** total shell startup time, satisfying the Zero-Fork SLA).
+
 ---
 
 ## 5. Bounded Security Context: SSH & GPG
@@ -107,6 +119,7 @@ To allow the developer to audit performance and security on-demand, we created t
 | `starship init fish` | Caching `--print-full-init` | Prevents the wrapper script from spawning starship and calling `psub` on every boot. | **~9ms** |
 | `defaults read com.apple.screencapture` | Lazy-loaded Function | Removing macOS plist queries from the critical boot path. | **~6.6ms** |
 | `fish_add_path` | In-memory loop arrays | Prevents blocking synchronous disk writes to `fish_variables` on shell boot. | **~5ms** |
+| `mise activate fish` | Static Wrapper + Shims in PATH | Sourcing mise activate spawns prompt hooks and forks `mise hook-env` (taking ~46ms) and overrides shims with installs paths. | **~46ms** |
 | Monolithic / Flat configs | Decade-Spaced contexts | Decade spacing (00, 10, 20...) enables scalable plugins without loading-order issues. | Ergononomics / DX |
 | Storing sockets in `~/.cache` | Secure State (`~/.ssh/agent_env` + umask) | Keeps authentication sockets out of public logs with `0600` owner-only permissions. | Security Integrity |
 

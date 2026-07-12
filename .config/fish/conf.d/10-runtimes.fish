@@ -7,16 +7,16 @@
 # dependencies: ["conf.d/01-variables.fish"]
 # backlinks: ["config.fish"]
 # created_at: "2026-06-24"
-# updated_at: "2026-07-05"
-# last_commit: "4a88e01116ee306d32c5739ebe70316c29791cbf"
-# tags: ["cache", "runtimes", "performance"]
+# updated_at: "2026-07-12"
+# last_commit: "pending"
+# tags: ["cache", "runtimes", "performance", "mise", "shims"]
 # ---
 
 # Defensive check: These tools are only relevant for interactive shell usage
 status is-interactive; or return
 
 # 1. Establish cache namespace
-set -l static_cache_directory_path "$HOME/.cache/fish/static_init"
+set -l static_cache_directory_path "$XDG_CACHE_HOME/fish/static_init"
 test -d "$static_cache_directory_path"; or mkdir -p "$static_cache_directory_path"
 
 set -l cache_pids
@@ -45,31 +45,10 @@ if test $should_regenerate_mamba_cache -eq 1
 end
 
 # --- Mise (Polyglot Runtime Engine) ---
-set -gx MISE_FISH_AUTO_ACTIVATE 0
-set -gx MISE_HOOK_ENV_CHPWD_ONLY true
-set -gx MISE_HOOK_ENV_CACHE_TTL 5s
-set -gx mise_fish_mode eval_after_arrow
-
-set -l should_regenerate_mise_cache 0
-set -l mise_binary_path (type -p mise)
-
-if test -n "$mise_binary_path"
-    if not test -f "$static_cache_directory_path/mise.fish"
-        set should_regenerate_mise_cache 1
-    else
-        # Invalidate cache if global config or the binary itself is newer than the cache file
-        if test -f "$HOME/.config/mise/config.toml"; and test "$HOME/.config/mise/config.toml" -nt "$static_cache_directory_path/mise.fish"
-            set should_regenerate_mise_cache 1
-        else if test "$mise_binary_path" -nt "$static_cache_directory_path/mise.fish"
-            set should_regenerate_mise_cache 1
-        end
-    end
-end
-
-if test $should_regenerate_mise_cache -eq 1
-    mise activate fish | string match -rv '^\s*__mise_env_eval\s*;?\s*$' >"$static_cache_directory_path/mise.fish" &
-    set -a cache_pids $last_pid
-end
+# ARCHITECTURAL DESIGN: Sourcing 'mise activate' is intentionally bypassed to satisfy
+# the Zero-Fork SLA (<25ms) and maintain shims (~/.local/share/mise/shims) as the single
+# source of truth in PATH. A static wrapper function handles shell-local commands (deactivate/shell/sh)
+# at functions/mise.fish. All runtime version lookups are dynamically processed by shims.
 
 # --- Starship (Prompt Engine) ---
 set -l should_regenerate_starship_cache 0
@@ -150,15 +129,19 @@ end
 
 if set -q cache_pids[1]
     wait $cache_pids
+    # Post-process atuin.fish if it was regenerated to bypass 'atuin uuid' spawn
+    if test -f "$static_cache_directory_path/atuin.fish"
+        set -l atuin_content (cat "$static_cache_directory_path/atuin.fish")
+        set -l native_uuid_code 'printf "%04x%04x-%04x-%04x-%04x-%04x%04x%04x" (random 0 65535) (random 0 65535) (random 0 65535) (random 16384 20479) (random 32768 49151) (random 0 65535) (random 0 65535) (random 0 65535)'
+        set -l patched_content (string replace 'atuin uuid' "$native_uuid_code" $atuin_content)
+        printf "%s\n" $patched_content > "$static_cache_directory_path/atuin.fish"
+    end
 end
 
 if test -f "$static_cache_directory_path/mamba.fish"
     source "$static_cache_directory_path/mamba.fish"
 end
 
-if test -f "$static_cache_directory_path/mise.fish"
-    source "$static_cache_directory_path/mise.fish"
-end
 
 if test -f "$static_cache_directory_path/starship.fish"
     source "$static_cache_directory_path/starship.fish"
@@ -178,6 +161,6 @@ end
 # Maintenance Utility
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function refresh_shell_cache --description "Clear static fish shell cache and reload"
-    rm -rf "$HOME/.cache/fish/static_init"
+    rm -rf "$XDG_CACHE_HOME/fish/static_init"
     exec fish
 end

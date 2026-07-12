@@ -7,8 +7,8 @@
 # dependencies: ["fzf", "fd", "rg", "git"]
 # backlinks: ["config.fish"]
 # created_at: "2026-06-25"
-# updated_at: "2026-06-25"
-# last_commit: ""
+# updated_at: "2026-07-12"
+# last_commit: "pending"
 # tags: ["filesystem", "navigation", "fzf", "git"]
 # ---
 
