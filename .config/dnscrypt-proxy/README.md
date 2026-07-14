@@ -1,7 +1,5 @@
 # Stealth DNS Infrastructure (v2026.05)
 
-A PhD-level, professional DNS stack designed for maximum performance and absolute privacy in hostile network environments. This project automates the deployment of a hardened `dnscrypt-proxy` configuration, integrating state-of-the-art circumvention protocols and automated maintenance cycles.
-
 ## 🚀 Key Features
 
 - **Stealth Anonymization**: Utilizes **Anonymized DNSCrypt** and **Oblivious DoH (ODoH)** to decouple your IP from your DNS queries via a multi-hop relay network.
@@ -83,4 +81,3 @@ If connectivity is lost or `health-check.sh` fails after manual changes:
 3. **Restart**: `sudo brew services start dnscrypt-proxy`
 
 ---
-**Standard Compliance**: Fully compliant with **XDG Base Directory Specification** and **macOS Filesystem Hierarchy**.
