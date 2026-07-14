@@ -1,6 +1,6 @@
 # zx0r-workstation
 
-> **Paradigm:** Workstation as Code (WaC) 
+> **Paradigm:** Workstation as Code (WaC)  
 > **Author:** [zx0r](https://github.com/zx0r)  
 > **License:** MIT  
 > **Platform:** macOS · Apple Silicon (arm64)  
